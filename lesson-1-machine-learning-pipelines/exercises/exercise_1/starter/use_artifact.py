@@ -16,9 +16,7 @@ def go(args):
 
     logger.info("Getting artifact")
 
-    # YOUR CODE HERE: get the artifact and store its local path in the variable "artifact_path"
-    # HINT: you can get the artifact path by using the "file()" method
-
+    artifact = run.use_artifact(args.artifact_name, type='artifact_type')
     artifact_path = artifact.file()
 
     logger.info("Artifact content:")
@@ -26,6 +24,7 @@ def go(args):
         content = fp.read()
 
     print(content)
+
 
 if __name__ == "__main__":
     

@@ -9,6 +9,7 @@ import tempfile
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
+wandb.login(key='cc525f313b1f7faa8400cbac7e481b1a43c3a4f5')
 
 
 def go(args):

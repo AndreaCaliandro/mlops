@@ -6,7 +6,7 @@ entry_points:
     parameters:
       file_url:
         description: URL of the file to download
-        type: uri
+        type: str
       artifact_name:
         description: Name for the W&B artifact that will be created
         type: str

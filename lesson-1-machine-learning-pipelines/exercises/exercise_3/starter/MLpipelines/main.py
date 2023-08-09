@@ -16,7 +16,7 @@ def go(config: DictConfig):
     root_path = hydra.utils.get_original_cwd()
 
     _ = mlflow.run(
-        os.path.join(root_path, "download_data"),
+        os.path.join(root_path, "../MLcomponents/download_data"),
         "main",
         parameters={
             "file_url": config["data"]["file_url"],
@@ -32,7 +32,16 @@ def go(config: DictConfig):
     # NOTE: use os.path.join(root_path, "process_data") to get the path
     # to the "process_data" component
     ##################
-
+    mlflow.run(
+        os.path.join(root_path, "../MLcomponents/process_data"),
+        "main",
+        parameters={
+            "input_artifact": 'iris.csv:latest',
+            "artifact_name": "iris.csv",
+            "artifact_type": "raw_data",
+            "artifact_description": "Input data"
+        },
+    )
 
 
 if __name__ == "__main__":

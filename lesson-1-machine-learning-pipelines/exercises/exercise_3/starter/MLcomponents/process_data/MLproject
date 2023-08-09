@@ -1,5 +1,8 @@
 name: download_data
-conda_env: conda.yml
+# conda_env: conda.yml
+docker_env:
+  image: mlpipes:latest
+  volumes: ["$BASE_DIR/MLcomponents/process_data:/component"]
 
 entry_points:
   main:
@@ -19,7 +22,7 @@ entry_points:
         type: str
 
     command: >-
-      python run.py --input_artifact {input_artifact} \
+      python component/run.py --input_artifact {input_artifact} \
                     --artifact_name {artifact_name} \
                     --artifact_type {artifact_type} \
                     --artifact_description {artifact_description}
