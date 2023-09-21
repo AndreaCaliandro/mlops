@@ -1,0 +1,15 @@
+name: download_data
+docker_env:
+  image: mlpipelines_base:latest
+  volumes: ["/home/andrea/Projects/mlops_udacity/lesson-2-data-exploration-and-preparation/exercises/exercise_5/starter/:/component"]
+
+entry_points:
+  main:
+    parameters:
+      hydra_options:
+        description: Hydra parameters to override
+        type: str
+        default: ''
+
+    command: >-
+      python /component/run.py $(echo {hydra_options})

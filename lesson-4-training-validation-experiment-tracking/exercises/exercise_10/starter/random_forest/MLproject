@@ -1,5 +1,7 @@
 name: decision_tree
-conda_env: conda.yml
+docker_env:
+  image: scikitlearn_base:latest
+  volumes: ["/home/andrea/Projects/mlops_udacity/lesson-4-training-validation-experiment-tracking/exercises/exercise_10/starter/random_forest:/script"]
 
 entry_points:
   main:
@@ -11,5 +13,5 @@ entry_points:
         description: JSON blurb containing the configuration for the decision tree
         type: str
     command: >-
-      python run.py --train_data {train_data} \
-                    --model_config {model_config}
+      python /script/run.py --train_data {train_data} \
+                            --model_config {model_config}

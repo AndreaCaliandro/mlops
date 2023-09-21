@@ -147,7 +147,7 @@ def get_inference_pipeline(args):
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", numeric_transformer, numeric_features),
-            ("cat", # COMPLETE HERE using the categorical transformer and the categorical_features,
+            ("cat", categorical_transformer, categorical_features) # COMPLETE HERE using the categorical transformer and the categorical_features,
             ("nlp1", nlp_transformer, nlp_features),
         ],
         remainder="drop",  # This drops the columns that we do not transform (i.e., we don't use)

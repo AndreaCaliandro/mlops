@@ -1,0 +1,11 @@
+wandb:
+  api_key: cc525f313b1f7faa8400cbac7e481b1a43c3a4f5
+  project: exercise_5
+  job_type: process_dat
+
+artifact:
+  path: /component/genres_mod.parquet
+  name: preprocessed_data.csv
+  type: tabular_data
+  description: "generi musicali puliti"
+
