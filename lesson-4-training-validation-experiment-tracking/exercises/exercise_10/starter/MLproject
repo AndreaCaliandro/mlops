@@ -1,5 +1,5 @@
 name: download_data
-conda_env: conda.yml
+# run mlfow with the option --env-manager=local
 
 entry_points:
   main:

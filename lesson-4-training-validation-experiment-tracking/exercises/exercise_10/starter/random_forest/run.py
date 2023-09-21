@@ -2,13 +2,14 @@
 import argparse
 import logging
 import json
+import os
 
 import pandas as pd
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
+from sklearn.metrics import roc_auc_score, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, FunctionTransformer
 import matplotlib.pyplot as plt
@@ -22,11 +23,16 @@ logger = logging.getLogger()
 
 def go(args):
 
+    wandb.login(key=os.environ['WANDB_API_KEY'])
     run = wandb.init(project="exercise_10", job_type="train")
 
     logger.info("Downloading and reading train artifact")
     train_data_path = run.use_artifact(args.train_data).file()
     df = pd.read_csv(train_data_path, low_memory=False)
+
+    logger.info("Downloading and reading model_config.json")
+    artifact = run.use_artifact('exercise_10/random_forest_config.json:latest')
+    model_config_path = artifact.file()
 
     # Extract the target from the features
     logger.info("Extracting target from dataframe")
@@ -40,7 +46,7 @@ def go(args):
 
     logger.info("Setting up pipeline")
 
-    pipe = get_inference_pipeline(args)
+    pipe = get_inference_pipeline(args, model_config_path=model_config_path)
 
     logger.info("Fitting")
     pipe.fit(X_train, y_train)
@@ -75,7 +81,7 @@ def go(args):
     fig_feat_imp.tight_layout()
 
     fig_cm, sub_cm = plt.subplots(figsize=(10, 10))
-    plot_confusion_matrix(
+    ConfusionMatrixDisplay.from_estimator(
         pipe,
         X_val,
         y_val,
@@ -94,7 +100,7 @@ def go(args):
     )
 
 
-def get_inference_pipeline(args):
+def get_inference_pipeline(args, model_config_path):
     # Our pipeline will contain a pre-processing step and a Random Forest.
     # The pre-processing step will impute missing values, encode the labels,
     # normalize numerical features and compute a TF-IDF for the textual
@@ -128,7 +134,10 @@ def get_inference_pipeline(args):
     ])
 
     ############# YOUR CODE HERE
-    numeric_transformer = # USE make_pipeline to create a pipeline containing a SimpleImputer using strategy=median
+    numeric_transformer = make_pipeline(
+        SimpleImputer(strategy="median"), StandardScaler()
+    )
+    # USE make_pipeline to create a pipeline containing a SimpleImputer using strategy=median
                           # and a StandardScaler (you can use the default options for the latter)
 
     # Textual ("nlp") preprocessing pipeline
@@ -138,7 +147,10 @@ def get_inference_pipeline(args):
     reshape_to_1d = FunctionTransformer(np.reshape, kw_args={"newshape": -1})
 
     ############# YOUR CODE HERE
-    nlp_transformer = # USE make_pipeline to create a pipeline containing a SimpleImputer with strategy=constant and
+    nlp_transformer = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""), reshape_to_1d, TfidfVectorizer(binary=True)
+    )
+    # USE make_pipeline to create a pipeline containing a SimpleImputer with strategy=constant and
                       # fill_value="" (the empty string), followed by our custom reshape_to_1d instance, and finally
                       # insert a TfidfVectorizer with the options binary=True
 
@@ -147,14 +159,14 @@ def get_inference_pipeline(args):
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", numeric_transformer, numeric_features),
-            ("cat", categorical_transformer, categorical_features) # COMPLETE HERE using the categorical transformer and the categorical_features,
+            ("cat", categorical_transformer, categorical_features),  # COMPLETE HERE using the categorical transformer and the categorical_features,
             ("nlp1", nlp_transformer, nlp_features),
         ],
         remainder="drop",  # This drops the columns that we do not transform (i.e., we don't use)
     )
 
     # Get the configuration for the model
-    with open(args.model_config) as fp:
+    with open(model_config_path) as fp:
         model_config = json.load(fp)
     # Add it to the W&B configuration so the values for the hyperparams
     # are tracked
@@ -163,13 +175,16 @@ def get_inference_pipeline(args):
     ############# YOUR CODE HERE
     # Append classifier to preprocessing pipeline.
     # Now we have a full prediction pipeline.
-    pipe = # CREATE a Pipeline instances with 2 steps: one step called "preprocessor" using the
-           # preprocessor instance, and another one called "classifier" using RandomForestClassifier(**model_config)
-           # (i.e., a Random Forest with the configuration we have received as input)
-           # NOTE: here you should create the Pipeline object directly, and not make_pipeline
-           # HINT: Pipeline(steps=[("preprocessor", instance1), ("classifier", LogisticRegression)]) creates a
-           #       Pipeline with two steps called "preprocessor" and "classifier" using the sklearn instances instance1
-           #       as preprocessor and a LogisticRegression as classifier
+    pipe = Pipeline(steps=[
+        ("preprocessor", preprocessor),
+        ("classifier", RandomForestClassifier(**model_config))])
+    # CREATE a Pipeline instances with 2 steps: one step called "preprocessor" using the
+    # preprocessor instance, and another one called "classifier" using RandomForestClassifier(**model_config)
+    # (i.e., a Random Forest with the configuration we have received as input)
+    # NOTE: here you should create the Pipeline object directly, and not make_pipeline
+    # HINT: Pipeline(steps=[("preprocessor", instance1), ("classifier", LogisticRegression)]) creates a
+    #       Pipeline with two steps called "preprocessor" and "classifier" using the sklearn instances instance1
+    #       as preprocessor and a LogisticRegression as classifier
     return pipe
 
 

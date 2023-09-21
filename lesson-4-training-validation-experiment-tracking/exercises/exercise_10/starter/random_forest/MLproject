@@ -1,7 +1,7 @@
 name: decision_tree
 docker_env:
   image: scikitlearn_base:latest
-  volumes: ["/home/andrea/Projects/mlops_udacity/lesson-4-training-validation-experiment-tracking/exercises/exercise_10/starter/random_forest:/script"]
+  environment: [["WANDB_API_KEY", "cc525f313b1f7faa8400cbac7e481b1a43c3a4f5"]]
 
 entry_points:
   main:
@@ -13,5 +13,5 @@ entry_points:
         description: JSON blurb containing the configuration for the decision tree
         type: str
     command: >-
-      python /script/run.py --train_data {train_data} \
-                            --model_config {model_config}
+      python run.py --train_data {train_data} \
+                    --model_config {model_config}
