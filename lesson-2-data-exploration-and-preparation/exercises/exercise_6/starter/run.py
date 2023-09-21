@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-import argparse
+
 import logging
 import os
 import tempfile
+
+import hydra
+from omegaconf import DictConfig
 
 import pandas as pd
 import wandb
@@ -13,12 +16,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
 
-def go(args):
+@hydra.main(config_name='config')
+def go(config: DictConfig):
 
-    run = wandb.init(project="exercise_6", job_type="split_data")
+    wandb.login(key=config['wandb']['api_key'])
+    run = wandb.init(project=config['wandb']['project'], job_type=config['wandb']['job_type'])
 
     logger.info("Downloading and reading artifact")
-    artifact = run.use_artifact(args.input_artifact)
+    artifact = run.use_artifact(config['artifact']['input'])
     artifact_path = artifact.file()
 
     df = pd.read_csv(artifact_path, low_memory=False)
@@ -31,7 +36,12 @@ def go(args):
     # COMPLETE the following line     #
     ###################################
 
-    splits["train"], splits["test"] = # USE train_test_split here to split df according to the provided args.test_size
+    splits["train"], splits["test"] = train_test_split(
+        df,
+        test_size=config['parameters']['test_size'],
+        random_state=config['parameters']['random_state'],
+        stratify=df[config['parameters']['stratify']] if config['parameters']['stratify'] != 'null' else None,
+    )
 
     # Now we save the artifacts. We use a temporary directory so we do not leave
     # any trace behind
@@ -40,7 +50,7 @@ def go(args):
         for split, df in splits.items():
 
             # Make the artifact name from the provided root plus the name of the split
-            artifact_name = f"{args.artifact_root}_{split}.csv"
+            artifact_name = f"{config['artifact']['output_root_name']}_{split}.csv"
 
             # Get the path on disk within the temp directory
             temp_path = os.path.join(tmp_dir, artifact_name)
@@ -52,8 +62,8 @@ def go(args):
 
             artifact = wandb.Artifact(
                 name=artifact_name,
-                type=args.artifact_type,
-                description=f"{split} split of dataset {args.input_artifact}",
+                type=config['artifact']['type'],
+                description=f"{split} split of dataset {config['artifact']['input']}",
             )
             artifact.add_file(temp_path)
 
@@ -68,54 +78,4 @@ def go(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Split a dataset into train and test",
-        fromfile_prefix_chars="@",
-    )
-
-    parser.add_argument(
-        "--input_artifact",
-        type=str,
-        help="Fully-qualified name for the input artifact",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--artifact_root",
-        type=str,
-        help="Root for the names of the produced artifacts. The script will produce 2 artifacts: "
-             "{root}_train.csv and {root}_test.csv",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--artifact_type", type=str, help="Type for the produced artifacts", required=True
-    )
-
-    parser.add_argument(
-        "--test_size",
-        help="Fraction of dataset or number of items to include in the test split",
-        type=float,
-        required=True
-    )
-
-    parser.add_argument(
-        "--random_state",
-        help="An integer number to use to init the random number generator. It ensures repeatibility in the"
-             "splitting",
-        type=int,
-        required=False,
-        default=42
-    )
-
-    parser.add_argument(
-        "--stratify",
-        help="If set, it is the name of a column to use for stratified splitting",
-        type=str,
-        required=False,
-        default='null'  # unfortunately mlflow does not support well optional parameters
-    )
-
-    args = parser.parse_args()
-
-    go(args)
+    go()

@@ -1,0 +1,15 @@
+wandb:
+  api_key: cc525f313b1f7faa8400cbac7e481b1a43c3a4f5
+  project: exercise_6
+  job_type: data_segregation
+
+artifact:
+  input: exercise_5/preprocessed_data.csv:latest
+  output_root_name: data
+  type: tabular_data
+
+parameters:
+  test_size: 0.3
+  random_state: 42
+  stratify: genre
+
