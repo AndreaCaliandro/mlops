@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import json
 import logging
 import yaml
 
@@ -8,7 +9,7 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
+from sklearn.metrics import roc_auc_score, ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler, FunctionTransformer
 import matplotlib.pyplot as plt
@@ -16,18 +17,21 @@ import wandb
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.impute import SimpleImputer
 
-from omegaconf import OmegaConf
+import hydra
+from omegaconf import DictConfig, OmegaConf
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
 
-def go(args):
+@hydra.main(config_name='config')
+def go(config: DictConfig):
 
     run = wandb.init(job_type="train")
 
     logger.info("Downloading and reading train artifact")
-    train_data_path = run.use_artifact(args.train_data).file()
+    train_data_path = run.use_artifact(config['data']['train_data']).file()
     df = pd.read_csv(train_data_path, low_memory=False)
 
     # Extract the target from the features
@@ -42,7 +46,7 @@ def go(args):
 
     logger.info("Setting up pipeline")
 
-    pipe = get_training_inference_pipeline(args)
+    pipe = get_training_inference_pipeline(config)
 
     logger.info("Fitting")
     pipe.fit(X_train, y_train)
@@ -77,7 +81,7 @@ def go(args):
     fig_feat_imp.tight_layout()
 
     fig_cm, sub_cm = plt.subplots(figsize=(10, 10))
-    plot_confusion_matrix(
+    ConfusionMatrixDisplay.from_estimator(
         pipe,
         X_val,
         y_val,
@@ -96,14 +100,15 @@ def go(args):
     )
 
 
-def get_training_inference_pipeline(args):
+def get_training_inference_pipeline(model_config):
 
     # Get the configuration for the pipeline
-    with open(args.model_config) as fp:
-        model_config = yaml.safe_load(fp)
+    # with open(args.model_config) as fp:
+    #     model_config = yaml.safe_load(fp)
     # Add it to the W&B configuration so the values for the hyperparams
     # are tracked
-    wandb.config.update(model_config)
+    model_config = OmegaConf.to_container(model_config, resolve=True)
+    wandb.config.update(model_config, allow_val_change=True)
 
     # We need 3 separate preprocessing "tracks":
     # - one for categorical features
@@ -152,25 +157,4 @@ def get_training_inference_pipeline(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Train a Random Forest",
-        fromfile_prefix_chars="@",
-    )
-
-    parser.add_argument(
-        "--train_data",
-        type=str,
-        help="Fully-qualified name for the training data artifact",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--model_config",
-        type=str,
-        help="Path to a YAML file containing the configuration for the random forest",
-        required=True,
-    )
-
-    args = parser.parse_args()
-
-    go(args)
+    go()

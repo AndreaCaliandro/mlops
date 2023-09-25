@@ -1,4 +1,5 @@
 import json
+import argparse
 
 import mlflow
 import os
@@ -18,18 +19,22 @@ def go(config: DictConfig):
     root_path = hydra.utils.get_original_cwd()
 
     # Serialize decision tree configuration
-    model_config = os.path.abspath("random_forest_config.yml")
+    # model_config = os.path.abspath("random_forest_config.yml")
 
-    with open(model_config, "w+") as fp:
-        fp.write(OmegaConf.to_yaml(config["random_forest_pipeline"]))
+    # with open(model_config, "w+") as fp:
+    #     fp.write(OmegaConf.to_yaml(config["random_forest_pipeline"]))
 
+    # model_config_dict = OmegaConf.to_container(config["random_forest_pipeline"], resolve=True)
+    # print(model_config_dict)
+    # assert isinstance(model_config_dict, dict)
+    # json_object = json.dumps(model_config_dict, indent = 4)
     _ = mlflow.run(
         os.path.join(root_path, "random_forest"),
         "main",
         parameters={
-            "train_data": config["data"]["train_data"],
-            "model_config": model_config
+            "hydra_options": config["random_forest"]["hydra_options"]
         },
+        build_image=True
     )
 
 

@@ -1,15 +1,15 @@
 name: decision_tree
-conda_env: conda.yml
+docker_env:
+  image: scikitlearn_base:latest
+  environment: [["WANDB_API_KEY", "cc525f313b1f7faa8400cbac7e481b1a43c3a4f5"],
+                 "WANDB_PROJECT",
+                 "WANDB_RUN_GROUP"]
 
 entry_points:
   main:
     parameters:
-      train_data:
-        description: Fully-qualified name for the training data artifact
-        type: str
-      model_config:
-        description: JSON blurb containing the configuration for the decision tree
+      hydra_options:
+        description: override hydra config
         type: str
     command: >-
-      python run.py --train_data {train_data} \
-                    --model_config {model_config}
+      python run.py $(echo {hydra_options})
