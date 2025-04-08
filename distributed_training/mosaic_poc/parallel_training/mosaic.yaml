@@ -1,0 +1,15 @@
+name: Supernal_PoC
+image: mosaicml/pytorch:latest
+compute:
+  nodes: 1
+  cluster: r7z23p1
+integrations:
+  - integration_type: git_repo
+    git_repo: AndreaCaliandro/mlops
+    git_branch: main
+command: >-
+  
+  echo -- Running training pipeline
+  
+  torchrun --nnodes=1 --nproc_per_node=8 --rdzv_id=100 --rdzv_backend=c10d --rdzv_endpoint=localhost:29400 distributed_training/mosaic_poc/parallel_training/torchrun_use_case.py
+
